@@ -1,0 +1,11 @@
+[package]
+
+name = "digit_recognizer"
+version = "0.0.1"
+authors = ["Jim Berlage <james.berlage@gmail.com>"]
+
+[dependencies]
+
+csv = "0.14"
+num = "*"
+rand = "0.3"
