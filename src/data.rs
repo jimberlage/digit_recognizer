@@ -1,4 +1,4 @@
-use common::{Digit, Picture};
+use common::{Digit, new_picture, Picture, PICTURE_HEIGHT};
 use csv::{Reader, Result, Writer};
 use std::fs::File;
 use num::pow;
@@ -54,16 +54,19 @@ fn convert_potential_row(pr: Result<Vec<String>>, expected_length: usize) -> Vec
 
 pub fn get_test_data(filename: &str) -> Vec<Picture> {
     let mut pictures: Vec<Picture> = Vec::new();
-
     let mut reader = read_csv(filename);
 
     for potential_row in reader.records() {
         let row = convert_potential_row(potential_row, 784);
+        let mut picture = new_picture();
+        let mut i = 0;
 
-        let mut picture = [0u8; 784];
+        for x in 0..PICTURE_HEIGHT {
+            for y in 0..PICTURE_HEIGHT {
+                picture[y][x] = string_to_digit(&row[i]);
 
-        for i in 0..784 {
-            picture[i] = string_to_digit(&row[i]);
+                i += 1;
+            }
         }
 
         pictures.push(picture);
@@ -75,18 +78,21 @@ pub fn get_test_data(filename: &str) -> Vec<Picture> {
 pub fn get_training_data(filename: &str) -> (Vec<Picture>, Vec<Digit>) {
     let mut pictures: Vec<Picture> = Vec::new();
     let mut results: Vec<Digit> = Vec::new();
-
     let mut reader = read_csv(filename);
 
     for potential_row in reader.records() {
         let row = convert_potential_row(potential_row, 785);
+        let mut picture = new_picture();
+        let mut i = 1;
 
         results.push(string_to_digit(&row[0]));
 
-        let mut picture = [0u8; 784];
+        for x in 0..PICTURE_HEIGHT {
+            for y in 0..PICTURE_HEIGHT {
+                picture[y][x] = string_to_digit(&row[i]);
 
-        for i in 1..785 {
-            picture[i - 1] = string_to_digit(&row[i]);
+                i += 1;
+            }
         }
 
         pictures.push(picture);
@@ -95,21 +101,17 @@ pub fn get_training_data(filename: &str) -> (Vec<Picture>, Vec<Digit>) {
     (pictures, results)
 }
 
-pub fn write_results(filename: &str, results: &Vec<Option<Digit>>) {
+pub fn write_results(filename: &str, results: &Vec<Digit>) {
     let mut writer = write_csv(filename);
-    let mut i: usize = 1;
+    let mut id: usize = 1;
 
     let r = writer.encode(vec!["ImageId", "Label"]);
     assert!(r.is_ok());
 
-    for &potential_digit in results.iter() {
-        let r = match potential_digit {
-            Some(n) => writer.encode(vec![i, n as usize]),
-            _       => writer.encode(vec![i, 1]),
-        };
-
+    for &digit in results.iter() {
+        let r = writer.encode(vec![id, digit as usize]);
         assert!(r.is_ok());
 
-        i += 1;
+        id += 1;
     }
 }

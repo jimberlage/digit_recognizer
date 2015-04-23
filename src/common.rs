@@ -1,15 +1,12 @@
+pub static DISTANCE: usize = 1;
+pub static PICTURE_HEIGHT: usize = 27;
+
 pub type Digit = u8;
 pub type Pixel = u8;
-pub type Picture = [Pixel; 784];
+pub type Picture = Vec<Vec<Pixel>>;
 
-pub trait Classifier {
-    fn classify(&self, p: &Picture) -> Option<Digit>;
-}
-
-pub trait DigitComparer {
-    fn add(&mut self, d: Digit);
-
-    fn mode(&self) -> Option<Digit>;
+pub fn new_picture() -> Picture {
+    vec![vec![0; PICTURE_HEIGHT]; PICTURE_HEIGHT]
 }
 
 pub fn is_not_black(p: Pixel) -> bool {

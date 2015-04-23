@@ -1,82 +1,117 @@
 extern crate csv;
 extern crate num;
-extern crate rand;
 
 pub mod common;
 pub mod data;
-pub mod decision_tree;
 pub mod frequency;
 
-use common::{Classifier, Digit, DigitComparer, Picture, is_not_black};
+use common::{Digit, DISTANCE, is_not_black, Picture, PICTURE_HEIGHT};
 use data::{get_test_data, get_training_data, write_results};
-use decision_tree::{DecisionTree, new_decision_tree};
-use frequency::Frequency;
-use std::collections::HashMap;
+use frequency::{add, combine, Frequencies, Frequency, mode, new_frequencies};
 use std::env::args;
 
-fn modes(pictures: &Vec<Picture>, results: &Vec<Digit>) -> HashMap<usize, Digit> {
-    if pictures.len() != results.len() {
-        panic!("The number of pictures does not match the number of results");
+type Point = (usize, usize);
+
+fn in_bounds(i: usize) -> bool {
+    i < PICTURE_HEIGHT
+}
+
+fn lower_bound(i: usize) -> usize {
+    let mut bound = i;
+
+    for j in 1..(DISTANCE + 1) {
+        if !in_bounds(i - j) { break; }
+
+        bound = i - j;
     }
 
-    let mut frequencies: [Frequency; 784] = [[None; 10]; 784];
+    bound
+}
+
+fn upper_bound(i: usize) -> usize {
+    let mut bound = i;
+
+    for j in 1..(DISTANCE + 1) {
+        if !in_bounds(i + j) { break; }
+
+        bound = i + j;
+    }
+
+    bound
+}
+
+/// This function returns the k nearest neighbors to the point (x, y).
+fn neighbors(index: Point) -> Vec<Point> {
+    let (x, y) = index;
+    let mut results: Vec<Point> = Vec::with_capacity(8);
+
+    for xi in lower_bound(x)..upper_bound(x) {
+        for yi in lower_bound(y)..upper_bound(y) {
+            results.push((xi, yi));
+        }
+    }
+
+    results
+}
+
+fn classify_pixel(index: Point, freqs: &Frequencies) -> Digit {
+    let mut f: Frequency = [0; 10];
+
+    for &(x, y) in neighbors(index).iter() {
+        combine(&mut f, &freqs[y][x]);
+    }
+
+    mode(&f)
+}
+
+fn classify(picture: &Picture, freqs: &Frequencies) -> Digit {
+    let mut f: Frequency = [0; 10];
+
+    for x in 0..PICTURE_HEIGHT {
+        for y in 0..PICTURE_HEIGHT {
+            if is_not_black(picture[y][x]) {
+                let d = classify_pixel((x, y), &freqs);
+
+                add(&mut f, d);
+            }
+        }
+    }
+
+    mode(&f)
+}
+
+fn add_picture(picture: &Picture, result: Digit, freqs: &mut Frequencies) {
+    for x in 0..PICTURE_HEIGHT {
+        for y in 0..PICTURE_HEIGHT {
+           if is_not_black(picture[y][x]) {
+               add(&mut freqs[y][x], result);
+           }
+        }
+    }
+}
+
+fn train(pictures: &Vec<Picture>, results: &Vec<Digit>) -> Frequencies {
+    if pictures.len() != results.len() {
+        panic!("The number of pictures in the training set did not match the number of results");
+    }
+
+    let mut freqs: Frequencies = new_frequencies();
 
     for i in 0..pictures.len() {
-        let picture = pictures[i];
-        let result = results[i];
-
-        for j in 0..picture.len() {
-            let pixel = picture[j];
-
-            if is_not_black(pixel) {
-                frequencies[pixel as usize].add(result);
-            }
-        }
+        add_picture(&pictures[i], results[i], &mut freqs);
     }
 
-    let mut result: HashMap<usize, Digit> = HashMap::with_capacity(784);
-
-    for i in 0..frequencies.len() {
-        let mode = frequencies[i].mode();
-
-        if mode.is_some() {
-            result.insert(i, mode.unwrap());
-        }
-    }
-
-    result
+    freqs
 }
 
-fn create_decision_trees(pictures: &Vec<Picture>, results: &Vec<Digit>) -> Vec<DecisionTree> {
-    let num_trees = 10000;
-    let m: HashMap<usize, Digit> = modes(pictures, results);
-    let mut result: Vec<DecisionTree> = Vec::with_capacity(num_trees);
+fn test(pictures: &Vec<Picture>, freqs: &Frequencies) -> Vec<Digit> {
+    let mut results: Vec<Digit> = Vec::with_capacity(pictures.len());
 
-    for _ in 0..num_trees {
-        result.push(new_decision_tree(&m));
+    for picture in pictures.iter() {
+        results.push(classify(picture, freqs));
     }
 
-    result
-}
-
-fn classify(pictures: &Vec<Picture>, d_trees: &Vec<DecisionTree>) -> Vec<Option<Digit>> {
-    let mut result: Vec<Option<Digit>> = Vec::with_capacity(pictures.len());
-
-    for pic in pictures.iter() {
-        let mut freq: Frequency = [None; 10];
-
-        for tree in d_trees.iter() {
-            let classification = tree.classify(pic);
-
-            if classification.is_some() {
-                freq.add(classification.unwrap());
-            }
-        }
-
-        result.push(freq.mode());
-    }
-
-    result
+    results
 }
 
 fn main() {
@@ -97,11 +132,11 @@ fn main() {
 
     let (training_pictures, training_results) = get_training_data(&training_file);
 
-    let decision_trees = create_decision_trees(&training_pictures, &training_results);
+    let freqs = train(&training_pictures, &training_results);
 
     let test_pictures = get_test_data(&test_file);
 
-    let test_results = classify(&test_pictures, &decision_trees);
+    let test_results = test(&test_pictures, &freqs);
 
     write_results(&output_file, &test_results);
 }

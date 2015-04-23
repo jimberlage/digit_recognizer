@@ -2,34 +2,37 @@
 /// many times it has appeared... somewhere.  For example, a pixel may have a frequency
 /// representing how many times the pixel is non-black and its picture contains a particular digit,
 /// for some set of pictures.
-///
-/// A Frequency implements DigitComparer, which means a digit may be added to its internal count,
-/// and the mode may be taken (returning whichever digit is represented most often in the 
-/// frequency). It's possible that a digit never appears.
 
-use common::{Digit, DigitComparer};
+use common::{Digit, PICTURE_HEIGHT};
 
-pub type Frequency = [Option<usize>; 10];
+pub type Frequency = [usize; 10];
 
-impl DigitComparer for Frequency {
-    fn add(&mut self, d: Digit) {
-        self[d as usize] = match self[d as usize] {
-            Some(count) => Some(count + 1usize),
-            None        => Some(1usize),
+pub fn add(freq: &mut Frequency, d: Digit) {
+    freq[d as usize] += 1;
+}
+
+pub fn combine(freq: &mut Frequency, other_freq: &Frequency) {
+    for i in 0..10 {
+        freq[i] += other_freq[i];
+    }
+}
+
+pub fn mode(freq: &Frequency) -> Digit {
+    let mut digit: Digit = 0; 
+    let mut max = 0;
+
+    for d in 0..freq.len() {
+        if freq[d] >= max {
+            digit = d as u8;
+            max = freq[d];
         }
     }
 
-    fn mode(&self) -> Option<Digit> {
-        let mut digit = None;
-        let mut max = 0;
+    digit
+}
 
-        for d in 0..self.len() {
-            match self[d] {
-                Some(count) if count >= max => { digit = Some(d as u8); max = count },
-                _                           => {},
-            };
-        }
+pub type Frequencies = Vec<Vec<Frequency>>;
 
-        digit
-    }
+pub fn new_frequencies() -> Frequencies {
+    vec![vec![[0; 10]; PICTURE_HEIGHT]; PICTURE_HEIGHT]
 }
