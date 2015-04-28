@@ -20,9 +20,10 @@ fn lower_bound(i: usize) -> usize {
     let mut bound = i;
 
     for j in 1..(DISTANCE + 1) {
-        if !in_bounds(i - j) { break; }
-
-        bound = i - j;
+        match i.checked_sub(j) {
+            Some(b) => { bound = b; },
+            None    => { break; },
+        };
     }
 
     bound
