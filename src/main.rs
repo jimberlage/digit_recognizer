@@ -12,10 +12,6 @@ use std::env::args;
 
 type Point = (usize, usize);
 
-fn in_bounds(i: usize) -> bool {
-    i < PICTURE_HEIGHT
-}
-
 fn lower_bound(i: usize) -> usize {
     let mut bound = i;
 
@@ -33,7 +29,7 @@ fn upper_bound(i: usize) -> usize {
     let mut bound = i;
 
     for j in 1..(DISTANCE + 1) {
-        if !in_bounds(i + j) { break; }
+        if !(i < PICTURE_HEIGHT) { break; }
 
         bound = i + j;
     }
