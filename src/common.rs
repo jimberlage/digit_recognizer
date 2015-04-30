@@ -9,6 +9,6 @@ pub fn new_picture() -> Picture {
     vec![vec![0; PICTURE_HEIGHT]; PICTURE_HEIGHT]
 }
 
-pub fn is_not_black(p: Pixel) -> bool {
+pub fn is_shaded(p: Pixel) -> bool {
     p != 0u8
 }

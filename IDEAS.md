@@ -80,3 +80,11 @@ Versions
 --------
 
 v0.0.3, v0.0.4
+
+Third Iteration
+===============
+
+Theory
+------
+
+This time I'm going to remove histograms from contention if they have less than 100 pixels, all told.

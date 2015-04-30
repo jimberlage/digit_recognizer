@@ -1,6 +1,6 @@
 [root]
 name = "digit_recognizer"
-version = "0.0.2"
+version = "0.0.5"
 dependencies = [
  "csv 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "num 0.1.22 (registry+https://github.com/rust-lang/crates.io-index)",
